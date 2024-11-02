@@ -229,27 +229,29 @@ void AspectRatio()
 
 void FOV()
 {
-    // FOV
-    std::uint8_t* FOVScanResult = Memory::PatternScan(baseModule, "41 0F ?? ?? F3 0F ?? ?? F3 0F ?? ?? ?? ?? ?? ?? 48 ?? ?? ?? 49 ?? ?? E8 ?? ?? ?? ??");
-    if (FOVScanResult) {
-        spdlog::info("FOV: Address is {:s}+{:x}", sExeName.c_str(), FOVScanResult - (std::uint8_t*)baseModule);
-        static SafetyHookMid FOVMidHook{};
-        FOVMidHook = safetyhook::create_mid(FOVScanResult,
-            [](SafetyHookContext& ctx) {
-                if (bFixFOV) {
-                    if (fAspectRatio > fNativeAspect)
-                        ctx.xmm9.f32[0] = atanf(tanf(ctx.xmm9.f32[0] * (fPi / 360)) / fNativeAspect * fAspectRatio) * (360 / fPi);
-                }
+    if (bFixFOV || fAdditionalFOV != 0.00f) {
+        // FOV
+        std::uint8_t* FOVScanResult = Memory::PatternScan(baseModule, "41 0F ?? ?? F3 0F ?? ?? F3 0F ?? ?? ?? ?? ?? ?? 48 ?? ?? ?? 49 ?? ?? E8 ?? ?? ?? ??");
+        if (FOVScanResult) {
+            spdlog::info("FOV: Address is {:s}+{:x}", sExeName.c_str(), FOVScanResult - (std::uint8_t*)baseModule);
+            static SafetyHookMid FOVMidHook{};
+            FOVMidHook = safetyhook::create_mid(FOVScanResult,
+                [](SafetyHookContext& ctx) {
+                    if (bFixFOV) {
+                        if (fAspectRatio > fNativeAspect)
+                            ctx.xmm9.f32[0] = atanf(tanf(ctx.xmm9.f32[0] * (fPi / 360)) / fNativeAspect * fAspectRatio) * (360 / fPi);
+                    }
 
-                if (fAdditionalFOV > 0.00f && ctx.rcx) {
-                    // Only apply additional FOV outside of cutscenes by checking for bConstrainAspectRatio.
-                    if (!(*(reinterpret_cast<uint8_t*>(ctx.rcx + 0x270)) & 0x02))
-                        ctx.xmm9.f32[0] += fAdditionalFOV;
-                }
-            });
-    }
-    else if (!FOVScanResult) {
-        spdlog::error("FOV: Pattern scan failed.");
+                    if (fAdditionalFOV != 0.00f && ctx.rcx) {
+                        // Only apply additional FOV outside of cutscenes by checking for bConstrainAspectRatio.
+                        if (!(*(reinterpret_cast<uint8_t*>(ctx.rcx + 0x270)) & 0x02))
+                            ctx.xmm9.f32[0] += fAdditionalFOV;
+                    }
+                });
+        }
+        else if (!FOVScanResult) {
+            spdlog::error("FOV: Pattern scan failed.");
+        }
     }
 }
 

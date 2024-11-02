@@ -7,3 +7,6 @@
 [submodule "external/Zydis"]
 	path = external/Zydis
 	url = https://github.com/Zyantific/Zydis.git
+[submodule "external/safetyhook"]
+	path = external/safetyhook
+	url = https://github.com/cursey/safetyhook

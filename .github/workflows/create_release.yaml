@@ -22,7 +22,7 @@ jobs:
         submodules: 'true'
 
     - name: setup-msbuild
-      uses: microsoft/setup-msbuild@v1.3
+      uses: microsoft/setup-msbuild@v2
       
     - run: msbuild ${{ github.event.repository.name }}.sln -t:rebuild -verbosity:diag -property:Configuration=Release -property:Platform=x64
     - run: cp x64\Release\${{ github.event.repository.name }}.asi ${{ github.event.repository.name }}.asi

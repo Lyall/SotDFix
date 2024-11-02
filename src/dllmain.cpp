@@ -42,6 +42,7 @@ bool bFixAspect;
 bool bFixFOV;
 float fAdditionalFOV;
 bool bFixHUD;
+bool bLODDistance;
 
 // Variables
 int iCurrentResX;
@@ -131,11 +132,14 @@ void Configuration()
     inipp::get_value(ini.sections["Fix FOV"], "Enabled", bFixFOV);
     spdlog::info("Config Parse: bFixFOV: {}", bFixFOV);
     inipp::get_value(ini.sections["Fix FOV"], "AdditionalFOV", fAdditionalFOV);
-    if (fAdditionalFOV < 80.00f || fAdditionalFOV > 80.00f) {
+    if (fAdditionalFOV < -80.00f || fAdditionalFOV > 80.00f) {
         fAdditionalFOV = std::clamp(fAdditionalFOV, -80.00f, 80.00f);
         spdlog::warn("Config Parse: fAdditionalFOV value invalid, clamped to {}", fAdditionalFOV);
     }
     spdlog::info("Config Parse: fAdditionalFOV: {}", fAdditionalFOV);
+
+    inipp::get_value(ini.sections["LOD Distance"], "Enabled", bLODDistance);
+    spdlog::info("Config Parse: bLODDistance: {}", bLODDistance);
 
     spdlog::info("----------");
 }
@@ -296,6 +300,23 @@ void Misc()
         }
         else if (!FramerateCapScanResult) {
             spdlog::error("Framerate Cap: Pattern scan failed.");
+        }
+    }
+
+    if (bLODDistance) {
+        // LOD distance
+        std::uint8_t* LODDistanceFactorScanResult = Memory::PatternScan(baseModule, "F3 0F ?? ?? ?? ?? ?? ?? 48 8D ?? ?? 49 ?? ?? E8 ?? ?? ?? ?? 48 ?? ?? 48 8D ?? ?? ?? ?? ?? E8 ?? ?? ?? ??");
+        if (LODDistanceFactorScanResult) {
+            spdlog::info("LOD Distance: Address is {:s}+{:x}", sExeName.c_str(), LODDistanceFactorScanResult - (std::uint8_t*)baseModule);
+            static SafetyHookMid LODDistanceFactorMidHook{};
+            LODDistanceFactorMidHook = safetyhook::create_mid(LODDistanceFactorScanResult,
+                [](SafetyHookContext& ctx) {
+                    // Set "LODDistanceFactor"
+                    ctx.xmm1.f32[0] = 0.001f;
+                });
+        }
+        else if (!LODDistanceFactorScanResult) {
+            spdlog::error("LOD Distance: Pattern scan failed.");
         }
     }
 }

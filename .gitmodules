@@ -4,3 +4,6 @@
 [submodule "external/inipp"]
 	path = external/inipp
 	url = https://github.com/mcmtroffaes/inipp
+[submodule "external/Zydis"]
+	path = external/Zydis
+	url = https://github.com/Zyantific/Zydis.git

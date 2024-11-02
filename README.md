@@ -7,6 +7,7 @@ This is a fix for Shadows of the Damned: Hella Remastered that lets you uncap th
 ## Features
 ### General
 - Remove 60FPS cap.
+- Adjust gameplay FOV.
  
 ### Ultrawide/Narrower
 - Support for any resolution/aspect ratio.

@@ -76,8 +76,6 @@ void Logging()
             spdlog::info("----------");
             spdlog::info("Log file: {}", sThisModulePath.string() + sLogFile);
             spdlog::info("----------");
-
-            // Log module details
             spdlog::info("Module Name: {0:s}", sExeName.c_str());
             spdlog::info("Module Path: {0:s}", sExePath.string());
             spdlog::info("Module Address: 0x{0:x}", (uintptr_t)baseModule);
@@ -97,7 +95,7 @@ void Logging()
 
 void Configuration()
 {
-    // Initialise config
+    // inipp initialisation
     std::ifstream iniFile(sThisModulePath.string() + sConfigFile);
     if (!iniFile) {
         AllocConsole();
@@ -133,8 +131,8 @@ void Configuration()
     inipp::get_value(ini.sections["Fix FOV"], "Enabled", bFixFOV);
     spdlog::info("Config Parse: bFixFOV: {}", bFixFOV);
     inipp::get_value(ini.sections["Fix FOV"], "AdditionalFOV", fAdditionalFOV);
-    if (fAdditionalFOV < (float)-80 || fAdditionalFOV >(float)80) {
-        fAdditionalFOV = std::clamp(fAdditionalFOV, (float)-80, (float)80);
+    if (fAdditionalFOV < 80.00f || fAdditionalFOV > 80.00f) {
+        fAdditionalFOV = std::clamp(fAdditionalFOV, -80.00f, 80.00f);
         spdlog::warn("Config Parse: fAdditionalFOV value invalid, clamped to {}", fAdditionalFOV);
     }
     spdlog::info("Config Parse: fAdditionalFOV: {}", fAdditionalFOV);
@@ -177,7 +175,7 @@ void CalculateAspectRatio(bool bLog)
 
 void Resolution()
 {
-    // Grab desktop resolution/aspect just in-case.
+    // Grab desktop resolution/aspect just in case
     DesktopDimensions = Util::GetPhysicalDesktopDimensions();
     iCurrentResX = DesktopDimensions.first;
     iCurrentResY = DesktopDimensions.second;
@@ -188,6 +186,7 @@ void Resolution()
         std::uint8_t* ResolutionFixScanResult = Memory::PatternScan(baseModule, "76 ?? C5 ?? ?? ?? C4 ?? ?? ?? ?? 8B ?? 41 ?? ?? ?? ?? ?? ??");
         if (ResolutionFixScanResult) {
             spdlog::info("Resolution: Address is {:s}+{:x}", sExeName.c_str(), ResolutionFixScanResult - (std::uint8_t*)baseModule);
+            // Jump past code that resizes the resolution 16:9
             Memory::PatchBytes(ResolutionFixScanResult, "\xEB\x09", 2);
             spdlog::info("Resolution: Patched instruction.");
 
@@ -218,6 +217,7 @@ void AspectRatio()
         std::uint8_t* CutsceneAspectRatioScanResult = Memory::PatternScan(baseModule, "F6 ?? ?? ?? ?? ?? 02 0F 84 ?? ?? ?? ?? F3 44 ?? ?? ?? ?? ?? ?? ?? F3 0F ?? ?? ?? ?? ?? ??");
         if (CutsceneAspectRatioScanResult) {
             spdlog::info("Cutscene Aspect Ratio: Address is {:s}+{:x}", sExeName.c_str(), CutsceneAspectRatioScanResult - (std::uint8_t*)baseModule);
+            // Force the test instruction for "bConstrainAspectRatio" to always set ZF so it jumps as though it was disabled
             Memory::PatchBytes(CutsceneAspectRatioScanResult + 0x6, "\x00", 1);
             spdlog::info("Cutscene Aspect Ratio: Patched instruction.");
         }
@@ -238,12 +238,13 @@ void FOV()
             FOVMidHook = safetyhook::create_mid(FOVScanResult,
                 [](SafetyHookContext& ctx) {
                     if (bFixFOV) {
+                        // Fix vert- FOV at >16:9
                         if (fAspectRatio > fNativeAspect)
                             ctx.xmm9.f32[0] = atanf(tanf(ctx.xmm9.f32[0] * (fPi / 360)) / fNativeAspect * fAspectRatio) * (360 / fPi);
                     }
 
                     if (fAdditionalFOV != 0.00f && ctx.rcx) {
-                        // Only apply additional FOV outside of cutscenes by checking for bConstrainAspectRatio.
+                        // Only apply additional FOV outside of cutscenes by checking for bConstrainAspectRatio
                         if (!(*(reinterpret_cast<uint8_t*>(ctx.rcx + 0x270)) & 0x02))
                             ctx.xmm9.f32[0] += fAdditionalFOV;
                     }
@@ -265,6 +266,7 @@ void HUD()
             static SafetyHookMid HUDMidHook{};
             HUDMidHook = safetyhook::create_mid(HUDScanResult,
                 [](SafetyHookContext& ctx) {
+                    // Set canvas size and offset
                     if (fAspectRatio > fNativeAspect) {
                         ctx.rbx = (int)ceilf(fHUDWidthOffset);
                         ctx.r8 = (int)ceilf(fHUDWidth);
@@ -288,6 +290,7 @@ void Misc()
         std::uint8_t* FramerateCapScanResult = Memory::PatternScan(baseModule, "83 3D ?? ?? ?? ?? 00 74 ?? F3 0F ?? ?? ?? ?? ?? ?? C3 0F 57 ?? C3");
         if (FramerateCapScanResult) {
             spdlog::info("Framerate Cap: Address is {:s}+{:x}", sExeName.c_str(), FramerateCapScanResult - (std::uint8_t*)baseModule);
+            // This effectively sets "MaxSmoothedFrameRate" to 0
             Memory::PatchBytes(FramerateCapScanResult + 0x7, "\xEB", 1);
             spdlog::info("Framerate Cap: Patched instruction.");
         }
@@ -311,10 +314,8 @@ DWORD __stdcall Main(void*)
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved)
 {
-    switch (ul_reason_for_call)
-    {
-    case DLL_PROCESS_ATTACH:
-    {
+    switch (ul_reason_for_call) {
+    case DLL_PROCESS_ATTACH: {
         thisModule = hModule;
         HANDLE mainHandle = CreateThread(NULL, 0, Main, 0, CREATE_SUSPENDED, 0);
         if (mainHandle) {

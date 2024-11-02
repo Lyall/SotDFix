@@ -1,8 +1,8 @@
 ## Changes
-- <CHANGES>
+- 
 
 ## Installation
-- Download the file marked `<RELEASE_ZIP>` from the "Assets" section below.
+- Download the file marked `<RELEASE_ZIP_NAME>` from the "Assets" section below.
 - Extract the contents of the release zip in to the the game folder. e.g. ("**steamapps\common\ShadowsOfTheDamned**" for Steam).
 
 ### Steam Deck/Linux Additional Instructions

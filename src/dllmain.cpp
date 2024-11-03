@@ -301,7 +301,7 @@ void Misc()
                     if (ctx.rax == 0) {
                         bIsMoviePlaying = false;
                     }
-                    else {
+                    else if (ctx.rax == 1) {
                         bIsMoviePlaying = true;
                     }
                 });
@@ -320,9 +320,11 @@ void Misc()
             FramerateCapMidHook = safetyhook::create_mid(FramerateCapScanResult,
                 [](SafetyHookContext& ctx) {
                     if (!bIsMoviePlaying) {
+                        // Uncap framerate
                         ctx.xmm0.f32[0] = 0.00f;
                     }
-                    else {
+                    else if (bIsMoviePlaying) {
+                        // Cap movies to 30fps
                         ctx.xmm0.f32[0] = 30.00f;
                     }
                 });

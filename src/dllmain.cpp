@@ -49,6 +49,7 @@ int iCurrentResX;
 int iCurrentResY;
 int iOldResX;
 int iOldResY;
+bool bIsMoviePlaying = false;
 
 void Logging()
 {
@@ -290,13 +291,41 @@ void HUD()
 void Misc()
 {
     if (bUncapFPS) {
+        // WS_GameInfo::IsMoviePlaying()
+        std::uint8_t* IsMoviePlayingScanResult = Memory::PatternScan(baseModule, "FF ?? 60 07 ?? ?? 89 ?? 48 ?? ?? ?? 5B C3");
+        if (IsMoviePlayingScanResult) {
+            spdlog::info("IsMoviePlaying: Address is {:s}+{:x}", sExeName.c_str(), IsMoviePlayingScanResult - (std::uint8_t*)baseModule);
+            static SafetyHookMid IsMoviePlayingMidHook{};
+            IsMoviePlayingMidHook = safetyhook::create_mid(IsMoviePlayingScanResult + 0x6,
+                [](SafetyHookContext& ctx) {
+                    if (ctx.rax == 0) {
+                        bIsMoviePlaying = false;
+                    }
+                    else {
+                        bIsMoviePlaying = true;
+                    }
+                });
+        }
+        else if (!IsMoviePlayingScanResult) {
+            spdlog::error("IsMoviePlaying: Pattern scan failed.");
+        }
+
+
         // Remove framerate cap
-        std::uint8_t* FramerateCapScanResult = Memory::PatternScan(baseModule, "83 3D ?? ?? ?? ?? 00 74 ?? F3 0F ?? ?? ?? ?? ?? ?? C3 0F 57 ?? C3");
+        std::uint8_t* FramerateCapScanResult = Memory::PatternScan(baseModule, "C5 ?? ?? ?? C5 ?? ?? ?? C5 ?? ?? ?? 76 ?? C5 ?? ?? ?? ?? ?? ?? ?? C5 ?? ?? ?? C4 ?? ?? ?? ?? C5 ?? ?? ?? 48 8D ?? ?? ??");
         if (FramerateCapScanResult) {
             spdlog::info("Framerate Cap: Address is {:s}+{:x}", sExeName.c_str(), FramerateCapScanResult - (std::uint8_t*)baseModule);
             // This effectively sets "MaxSmoothedFrameRate" to 0
-            Memory::PatchBytes(FramerateCapScanResult + 0x7, "\xEB", 1);
-            spdlog::info("Framerate Cap: Patched instruction.");
+            static SafetyHookMid FramerateCapMidHook{};
+            FramerateCapMidHook = safetyhook::create_mid(FramerateCapScanResult,
+                [](SafetyHookContext& ctx) {
+                    if (!bIsMoviePlaying) {
+                        ctx.xmm0.f32[0] = 0.00f;
+                    }
+                    else {
+                        ctx.xmm0.f32[0] = 30.00f;
+                    }
+                });
         }
         else if (!FramerateCapScanResult) {
             spdlog::error("Framerate Cap: Pattern scan failed.");

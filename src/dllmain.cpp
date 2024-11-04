@@ -323,10 +323,6 @@ void Misc()
                         // Uncap framerate
                         ctx.xmm0.f32[0] = 0.00f;
                     }
-                    else if (bIsMoviePlaying) {
-                        // Cap movies to 30fps
-                        ctx.xmm0.f32[0] = 30.00f;
-                    }
                 });
         }
         else if (!FramerateCapScanResult) {

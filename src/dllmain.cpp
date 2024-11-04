@@ -49,7 +49,6 @@ int iCurrentResX;
 int iCurrentResY;
 int iOldResX;
 int iOldResY;
-bool bIsMoviePlaying = false;
 
 void Logging()
 {
@@ -209,7 +208,7 @@ void Resolution()
                     }
                 });
         }
-        else if (!ResolutionFixScanResult) {
+        else {
             spdlog::error("Resolution: Pattern scan failed.");
         }
     }
@@ -226,7 +225,7 @@ void AspectRatio()
             Memory::PatchBytes(CutsceneAspectRatioScanResult + 0x6, "\x00", 1);
             spdlog::info("Cutscene Aspect Ratio: Patched instruction.");
         }
-        else if (!CutsceneAspectRatioScanResult) {
+        else {
             spdlog::error("Cutscene Aspect Ratio: Pattern scan failed.");
         }
     }
@@ -255,7 +254,7 @@ void FOV()
                     }
                 });
         }
-        else if (!FOVScanResult) {
+        else {
             spdlog::error("FOV: Pattern scan failed.");
         }
     }
@@ -282,31 +281,36 @@ void HUD()
                     }
                 });
         }
-        else if (!HUDScanResult) {
+        else {
             spdlog::error("HUD: Pattern scan failed.");
         }
     }
+}
+
+bool bIsMoviePlaying = false;
+SafetyHookInline IsMoviePlaying_sh{};
+
+bool IsMoviePlaying_hk()
+{
+    // Call original function
+    bool result = IsMoviePlaying_sh.fastcall<bool>();
+    bIsMoviePlaying = result;
+    return result;
 }
 
 void Misc()
 {
     if (bUncapFPS) {
         // WS_GameInfo::IsMoviePlaying()
-        std::uint8_t* IsMoviePlayingScanResult = Memory::PatternScan(baseModule, "FF ?? 60 07 ?? ?? 89 ?? 48 ?? ?? ?? 5B C3");
+        std::uint8_t* IsMoviePlayingScanResult = Memory::PatternScan(baseModule, "48 ?? ?? ?? 48 ?? ?? ?? ?? ?? ?? 48 ?? ?? FF ?? ?? 83 ?? ?? 01");
         if (IsMoviePlayingScanResult) {
             spdlog::info("IsMoviePlaying: Address is {:s}+{:x}", sExeName.c_str(), IsMoviePlayingScanResult - (std::uint8_t*)baseModule);
-            static SafetyHookMid IsMoviePlayingMidHook{};
-            IsMoviePlayingMidHook = safetyhook::create_mid(IsMoviePlayingScanResult + 0x6,
-                [](SafetyHookContext& ctx) {
-                    if (ctx.rax == 0) {
-                        bIsMoviePlaying = false;
-                    }
-                    else if (ctx.rax == 1) {
-                        bIsMoviePlaying = true;
-                    }
-                });
+            IsMoviePlaying_sh = safetyhook::create_inline(IsMoviePlayingScanResult, reinterpret_cast<void*>(IsMoviePlaying_hk));
+            
+            if (IsMoviePlaying_sh) 
+                spdlog::info("IsMoviePlaying: Hooked function successfully.");
         }
-        else if (!IsMoviePlayingScanResult) {
+        else {
             spdlog::error("IsMoviePlaying: Pattern scan failed.");
         }
 
@@ -325,7 +329,7 @@ void Misc()
                     }
                 });
         }
-        else if (!FramerateCapScanResult) {
+        else {
             spdlog::error("Framerate Cap: Pattern scan failed.");
         }
     }
@@ -342,7 +346,7 @@ void Misc()
                     ctx.xmm1.f32[0] = 0.001f;
                 });
         }
-        else if (!LODDistanceFactorScanResult) {
+        else {
             spdlog::error("LOD Distance: Pattern scan failed.");
         }
     }

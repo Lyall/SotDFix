@@ -6,7 +6,7 @@ This is a fix for Shadows of the Damned: Hella Remastered that adds ultrawide/na
 
 ## Features
 ### General
-- Remove 60FPS cap (see [Known Issues](#Known-Issues)).
+- Remove 60FPS cap (WIP, see [issues](#Known-Issues)).
 - Adjust gameplay FOV.
 - Increase LOD distance.
  
@@ -29,7 +29,7 @@ This is a fix for Shadows of the Damned: Hella Remastered that adds ultrawide/na
 ## Known Issues
 Please report any issues you see.
 
-- Uncapping the framerate can cause some issues such as desynchronisation of audio. ([#8](https://github.com/Lyall/SotDFix/issues/8)
+- Uncapping the framerate can cause some issues such as desynchronisation of audio. ([#8](https://github.com/Lyall/SotDFix/issues/8))
 
 ## Screenshots
 ![ezgif-2-6f2171aee5](https://github.com/user-attachments/assets/1c07e4f5-e3b1-4feb-b4ba-346b959b5e6a)

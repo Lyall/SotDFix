@@ -2,11 +2,11 @@
 [![Patreon-Button](https://raw.githubusercontent.com/Lyall/SotDFix/refs/heads/master/.github/Patreon-Button.png)](https://www.patreon.com/Wintermance) [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01UAI9)<br />
 [![Github All Releases](https://img.shields.io/github/downloads/Lyall/SotDFix/total.svg)](https://github.com/Lyall/SotDFix/releases)
 
-This is a fix for Shadows of the Damned: Hella Remastered that lets you uncap the framerate, add ultrawide support and adjust gameplay FOV.
+This is a fix for Shadows of the Damned: Hella Remastered that adds ultrawide/narrower support, allows adjusting gameplay FOV and more.
 
 ## Features
 ### General
-- Remove 60FPS cap.
+- Remove 60FPS cap (see [Known Issues](#Known-Issues)).
 - Adjust gameplay FOV.
 - Increase LOD distance.
  
@@ -28,6 +28,8 @@ This is a fix for Shadows of the Damned: Hella Remastered that lets you uncap th
 
 ## Known Issues
 Please report any issues you see.
+
+- Uncapping the framerate can cause some issues such as desynchronisation of audio. ([#8](https://github.com/Lyall/SotDFix/issues/8)
 
 ## Screenshots
 ![ezgif-2-6f2171aee5](https://github.com/user-attachments/assets/1c07e4f5-e3b1-4feb-b4ba-346b959b5e6a)

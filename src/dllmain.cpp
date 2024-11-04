@@ -121,6 +121,13 @@ void Configuration()
     inipp::get_value(ini.sections["Uncap Framerate"], "Enabled", bUncapFPS);
     spdlog::info("Config Parse: bUncapFPS: {}", bUncapFPS);
 
+    inipp::get_value(ini.sections["Gameplay FOV"], "AdditionalFOV", fAdditionalFOV);
+    if (fAdditionalFOV < -80.00f || fAdditionalFOV > 80.00f) {
+        fAdditionalFOV = std::clamp(fAdditionalFOV, -80.00f, 80.00f);
+        spdlog::warn("Config Parse: fAdditionalFOV value invalid, clamped to {}", fAdditionalFOV);
+    }
+    spdlog::info("Config Parse: fAdditionalFOV: {}", fAdditionalFOV);
+
     inipp::get_value(ini.sections["Fix Resolution"], "Enabled", bFixResolution);
     spdlog::info("Config Parse: bFixResolution: {}", bFixResolution);
 
@@ -132,12 +139,6 @@ void Configuration()
 
     inipp::get_value(ini.sections["Fix FOV"], "Enabled", bFixFOV);
     spdlog::info("Config Parse: bFixFOV: {}", bFixFOV);
-    inipp::get_value(ini.sections["Fix FOV"], "AdditionalFOV", fAdditionalFOV);
-    if (fAdditionalFOV < -80.00f || fAdditionalFOV > 80.00f) {
-        fAdditionalFOV = std::clamp(fAdditionalFOV, -80.00f, 80.00f);
-        spdlog::warn("Config Parse: fAdditionalFOV value invalid, clamped to {}", fAdditionalFOV);
-    }
-    spdlog::info("Config Parse: fAdditionalFOV: {}", fAdditionalFOV);
 
     inipp::get_value(ini.sections["LOD Distance"], "Enabled", bLODDistance);
     spdlog::info("Config Parse: bLODDistance: {}", bLODDistance);

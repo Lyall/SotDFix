@@ -11,7 +11,7 @@ HMODULE thisModule;
 
 // Version
 std::string sFixName = "SotDFix";
-std::string sFixVer = "0.0.2";
+std::string sFixVer = "0.0.3";
 std::string sLogFile = sFixName + ".log";
 std::filesystem::path sThisModulePath;
 

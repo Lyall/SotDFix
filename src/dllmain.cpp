@@ -49,6 +49,7 @@ int iCurrentResX;
 int iCurrentResY;
 int iOldResX;
 int iOldResY;
+bool bIsMoviePlaying = false;
 
 void Logging()
 {
@@ -287,33 +288,26 @@ void HUD()
     }
 }
 
-bool bIsMoviePlaying = false;
 SafetyHookInline IsMoviePlaying_sh{};
-
 bool IsMoviePlaying_hk()
 {
-    // Call original function
-    bool result = IsMoviePlaying_sh.fastcall<bool>();
-    bIsMoviePlaying = result;
-    return result;
+    return (bIsMoviePlaying = IsMoviePlaying_sh.fastcall<bool>());
 }
 
 void Misc()
 {
     if (bUncapFPS) {
         // WS_GameInfo::IsMoviePlaying()
-        std::uint8_t* IsMoviePlayingScanResult = Memory::PatternScan(baseModule, "48 ?? ?? ?? 48 ?? ?? ?? ?? ?? ?? 48 ?? ?? FF ?? ?? 83 ?? ?? 01");
+        std::uint8_t* IsMoviePlayingScanResult = Memory::PatternScan(baseModule, "48 ?? ?? ?? 48 ?? ?? ?? ?? ?? ?? 48 ?? ?? FF ?? ?? 83 ?? ?? 01 7E ??");
         if (IsMoviePlayingScanResult) {
             spdlog::info("IsMoviePlaying: Address is {:s}+{:x}", sExeName.c_str(), IsMoviePlayingScanResult - (std::uint8_t*)baseModule);
             IsMoviePlaying_sh = safetyhook::create_inline(IsMoviePlayingScanResult, reinterpret_cast<void*>(IsMoviePlaying_hk));
-            
             if (IsMoviePlaying_sh) 
                 spdlog::info("IsMoviePlaying: Hooked function successfully.");
         }
         else {
             spdlog::error("IsMoviePlaying: Pattern scan failed.");
         }
-
 
         // Remove framerate cap
         std::uint8_t* FramerateCapScanResult = Memory::PatternScan(baseModule, "C5 ?? ?? ?? C5 ?? ?? ?? C5 ?? ?? ?? 76 ?? C5 ?? ?? ?? ?? ?? ?? ?? C5 ?? ?? ?? C4 ?? ?? ?? ?? C5 ?? ?? ?? 48 8D ?? ?? ??");

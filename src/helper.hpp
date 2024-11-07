@@ -152,4 +152,13 @@ namespace Util
 
         return {};
     }
+
+    std::string wstring_to_string(const wchar_t* wstr)
+    {
+        size_t len = std::wcslen(wstr);
+        std::string str(len, '\0');
+        size_t converted = 0;
+        wcstombs_s(&converted, &str[0], str.size() + 1, wstr, str.size());
+        return str;
+    }
 }

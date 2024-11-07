@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "helper.hpp"
 
-#include <inipp/inipp.h>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include <inipp/inipp.h>
 #include <safetyhook.hpp>
 
 HMODULE baseModule = GetModuleHandle(NULL);
@@ -347,6 +347,67 @@ void Misc()
     }
 }
 
+typedef void(__thiscall* EngineExecType)(size_t, const wchar_t*, size_t);
+EngineExecType EngineExec_fn = nullptr;
+
+std::uint8_t* GEngine = nullptr;
+size_t FOutputDevice = 0;
+
+SafetyHookInline EngineExec_sh{};
+void EngineExec_hk(size_t gameEngine, const wchar_t* cmd, size_t outputDevice)
+{
+    // GEngine
+    GEngine = (uint8_t*)gameEngine;
+    //spdlog::info("UGameEngine::Exec(): GEngine address: {:x}", (uintptr_t)GEngine);
+
+    // FOutputDevice
+    if (FOutputDevice == 0)
+        FOutputDevice = outputDevice;
+
+    // Log command
+    //spdlog::info("UGameEngine::Exec(): Executed command: {}", Util::wstring_to_string(cmd));
+
+    // Call original function
+    EngineExec_sh.thiscall<void>(gameEngine, cmd, outputDevice);
+}
+
+void UE()
+{
+    // UGameEngine::Exec()
+    std::uint8_t* EngineExecScanResult = Memory::PatternScan(baseModule, "48 89 ?? ?? ?? 55 56 57 41 ?? 41 ?? 41 ?? 41 ?? 48 8D ?? ?? ?? ?? ?? ?? 48 81 ?? ?? ?? ?? ?? 0F 29 ?? ?? ?? ?? ?? ?? 48 8B ?? ?? ?? ?? ?? 48 33 ?? 48 89 ?? ?? ?? ?? ?? 4D ?? ?? 48 ?? ?? 4C ?? ??");
+    if (EngineExecScanResult) {
+        spdlog::info("UGameEngine::Exec(): Address is {:s}+{:x}", sExeName.c_str(), EngineExecScanResult - (std::uint8_t*)baseModule);
+
+        EngineExec_fn = (EngineExecType)EngineExecScanResult;
+        EngineExec_sh = safetyhook::create_inline(EngineExec_fn, reinterpret_cast<void*>(EngineExec_hk));
+        if (EngineExec_sh) {
+            spdlog::info("UGameEngine::Exec(): Hooked function successfully.");
+        }
+        else {
+            spdlog::info("UGameEngine::Exec(): Failed to hook function.");
+            return;
+        }
+
+        for (int attempts = 0; attempts < 30; ++attempts) {
+            if (GEngine) {
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+        if (GEngine && FOutputDevice) {
+            EngineExec_hk((size_t)GEngine, L"stat fps", FOutputDevice);
+            EngineExec_hk((size_t)GEngine, L"stat unit", FOutputDevice);
+        }
+        else {
+            spdlog::error("UGameEngine::Exec(): Failed to find valid GEngine address or FOutputDevice.");
+        }
+    }
+    else {
+        spdlog::error("UGameEngine::Exec(): Pattern scan failed.");
+    }
+}
+
 DWORD __stdcall Main(void*)
 {
     Logging();
@@ -356,6 +417,7 @@ DWORD __stdcall Main(void*)
     FOV();
     HUD();
     Misc();
+    //UE();
     return true;
 }
 
